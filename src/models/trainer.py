@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from transformers import AdamW, get_linear_schedule_with_warmup
+from torch.optim import AdamW
+from transformers import get_linear_schedule_with_warmup
 import numpy as np
 from tqdm import tqdm
 import logging
@@ -52,9 +53,8 @@ class ModelTrainer:
         )
         
         # Optimizer with different learning rates for BERT and other layers
-        bert_params = list(self.model.bert.parameters())
-        other_params = [p for p in self.model.parameters() if not any(p is bp for bp in bert_params)]
-        
+        bert_params = [param for name, param in self.model.named_parameters() if name.startswith("bert")]
+        other_params = [param for name, param in self.model.named_parameters() if not name.startswith("bert")]
         self.optimizer = AdamW([
             {'params': bert_params, 'lr': config['bert_lr']},
             {'params': other_params, 'lr': config['other_lr']}
@@ -81,8 +81,7 @@ class ModelTrainer:
         total_loss = 0
         total_smape = 0
         predictions, targets = [], []
-        
-        for batch in tqdm(self.train_loader, desc="Training"):
+        for step, batch in enumerate(tqdm(self.train_loader, desc="Training")):
             # Move to device
             input_ids = batch['input_ids'].to(self.device)
             attention_mask = batch['attention_mask'].to(self.device)
@@ -109,6 +108,16 @@ class ModelTrainer:
             total_smape += smape_loss.item()
             predictions.extend(pred_prices.detach().cpu().numpy())
             targets.extend(prices.detach().cpu().numpy())
+            
+            loss_value = loss.item()
+            mse_value = mse_loss.item()
+            smape_value = smape_loss.item()
+
+            if (step + 1) % self.config.get('log_every', 1) == 0:
+                self.logger.info(
+                    f"Epoch {self.current_epoch+1} Step {step+1}/{len(self.train_loader)} "
+                    f"loss={loss_value:.4f} mse={mse_value:.4f} smape={smape_value:.2f}%"
+                )
         
         avg_loss = total_loss / len(self.train_loader)
         avg_smape = total_smape / len(self.train_loader)
@@ -149,8 +158,9 @@ class ModelTrainer:
     def train(self):
         best_val_smape = float('inf')
         patience = 0
-        
+        self.current_epoch = 0
         for epoch in range(self.config['epochs']):
+            self.current_epoch = epoch
             self.logger.info(f"Epoch {epoch+1}/{self.config['epochs']}")
             
             # Training

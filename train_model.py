@@ -49,8 +49,19 @@ def main():
     print(f"Final feature count: {len(final_df.columns)}")
     
     # 5. Train-validation split
+    price_bins = None
+    try:
+        price_bins = pd.qcut(final_df["price"], q=5, duplicates="drop")
+        if price_bins.value_counts().min() < 2:
+            price_bins = None
+    except ValueError:
+        price_bins = None
+
     train_df_final, val_df_final = train_test_split(
-        final_df, test_size=0.2, random_state=42, stratify=pd.cut(final_df['price'], bins=5)
+        final_df,
+        test_size=0.2,
+        random_state=42,
+        stratify=price_bins,
     )
     
     print(f"Train: {len(train_df_final)}, Validation: {len(val_df_final)}")
