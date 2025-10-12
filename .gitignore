@@ -1,6 +1,6 @@
 # Ignore dataset files used for training/testing
 dataset/test.csv
 dataset/train.csv
-models/RandomForest.py
+src/models/RandomForest.py
 src/temp.py
 v_env.bat
