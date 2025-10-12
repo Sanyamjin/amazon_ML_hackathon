@@ -1,4 +1,3 @@
 # Ignore dataset files used for training/testing
 dataset/test.csv
 dataset/train.csv
-dataset/cleaned_data.csv
