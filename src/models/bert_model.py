@@ -41,12 +41,14 @@ class BERTPricePredictor(nn.Module):
         self._init_weights()
     
     def _init_weights(self):
-        """Initialize additional layers with Xavier initialization"""
-        for module in [self.numerical_processor, self.fusion_layer, self.price_head]:
-            for layer in module:
-                if isinstance(layer, nn.Linear):
-                    nn.init.xavier_uniform_(layer.weight)
-                    nn.init.zeros_(layer.bias)
+        for module in self.modules():
+            if isinstance(module, nn.Linear):
+                nn.init.xavier_uniform_(module.weight)
+                if module.bias is not None:
+                    nn.init.zeros_(module.bias)
+            elif isinstance(module, nn.LayerNorm):
+                nn.init.ones_(module.weight)
+                nn.init.zeros_(module.bias)
     
     def forward(self, input_ids, attention_mask, numerical_features):
         # BERT encoding
