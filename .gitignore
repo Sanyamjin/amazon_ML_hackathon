@@ -4,3 +4,4 @@ dataset/train.csv
 src/models/RandomForest.py
 src/temp.py
 v_env.bat
+__pycache__/
