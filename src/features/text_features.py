@@ -1,3 +1,4 @@
+from __future__ import annotations
 import pandas as pd
 import numpy as np
 import re
@@ -7,13 +8,33 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from sklearn.feature_extraction.text import TfidfVectorizer
 from textstat import flesch_reading_ease, flesch_kincaid_grade
+from typing import Dict, List, Optional, Tuple
+from dataclasses import dataclass
 
 # Download required NLTK data
 nltk.download('punkt', quiet=True)
 nltk.download('stopwords', quiet=True)
 
+def ensure_nltk_resources():
+    resources = ["punkt", "punkt_tab"]
+    for resource in resources:
+        try:
+            if resource == "punkt":
+                nltk.data.find("tokenizers/punkt")
+            else:
+                nltk.data.find("tokenizers/punkt_tab/english.pickle")
+        except LookupError:
+            nltk.download(resource)
+
+@dataclass
+class TextFeatureConfig:
+    def __getattr__(self, item):
+        return None
+
 class TextFeatureExtractor:
-    def __init__(self):
+    def __init__(self, config: Optional[TextFeatureConfig] = None):
+        ensure_nltk_resources()
+        self.config = config or TextFeatureConfig()
         self.stop_words = set(stopwords.words('english'))
         
         # Price-relevant patterns
